@@ -67,6 +67,17 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  const double confidence_3df = 7.815;
+  int count_radar_outlier = 0;
+  int count_radar = 0;
+
+  const double confidence_2df = 5.991;
+  int count_laser_outlier = 0;
+  int count_laser = 0;
+
+  MatrixXd R_radar;
+  MatrixXd R_laser;
+
 
   /**
    * Constructor
@@ -102,6 +113,7 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
 };
 
 #endif /* UKF_H */

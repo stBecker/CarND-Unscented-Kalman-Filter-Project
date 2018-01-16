@@ -65,12 +65,7 @@ UKF::UKF() {
 
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
-  P_.fill(0);
-  P_(0, 0) = 1;
-  P_(1, 1) = 1;
-  P_(2, 2) = 1;
-  P_(3, 3) = 1;
-  P_(4, 4) = 1;
+  P_ = MatrixXd::Identity(n_x_, n_x_);
 
   //calculate innovation covariance matrix S
   R_radar = MatrixXd::Zero(3, 3);
@@ -180,8 +175,8 @@ void UKF::Prediction(double delta_t) {
   //create augmented covariance matrix
   P_aug.fill(0.0);
   P_aug.topLeftCorner(5, 5) = P_;
-  P_aug(5, 5) = std_a_*std_a_;
-  P_aug(6, 6) = std_yawdd_*std_yawdd_;
+  P_aug(n_x_, n_x_) = std_a_*std_a_;
+  P_aug(n_x_+1, n_x_+1) = std_yawdd_*std_yawdd_;
 
   //create square root matrix
   MatrixXd L = P_aug.llt().matrixL();
@@ -268,22 +263,23 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   */
   int n_z = 2;
 
-  //create matrix for sigma points in measurement space
-  MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
-
   //mean predicted measurement
   VectorXd z_pred = VectorXd(n_z);
 
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z, n_z);
 
-  //transform sigma points into measurement space
-  for (int i = 0; i < 2 * n_aug_ + 1; i++) {
-    float px = Xsig_pred_(0, i);
-    float py = Xsig_pred_(1, i);
+  ////create matrix for sigma points in measurement space
+  //MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
+  ////transform sigma points into measurement space
+  //for (int i = 0; i < 2 * n_aug_ + 1; i++) {
+  //  float px = Xsig_pred_(0, i);
+  //  float py = Xsig_pred_(1, i);
 
-    Zsig.col(i) << px, py;
-  }
+  //  Zsig.col(i) << px, py;
+  //}
+
+  MatrixXd Zsig = Xsig_pred_.block(0, 0, n_z, 2 * n_aug_ + 1);
 
   //calculate mean predicted measurement
   z_pred = Zsig*weights_;
@@ -362,6 +358,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     float sci = Xsig_pred_(3, i);
     float scid = Xsig_pred_(4, i);
 
+    if (px == 0 && py == 0) {
+      px = 0.0001;
+    }
     float rho = sqrt(px*px + py*py);
     float phi = atan2(py, px);
     float rhod = (px*cos(sci)*v + py*sin(sci)*v) / rho;
